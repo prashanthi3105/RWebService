@@ -1,3 +1,159 @@
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.InjectMocks;
+import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
+
+import javax.servlet.http.HttpSession;
+
+import java.util.StringTokenizer;
+
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+class UpdateBQRAccessGroupControllerTest {
+
+    @InjectMocks
+    private UpdateBQRAccessGroupController controller;
+
+    @Mock
+    private CustomerCalcDao customerCalcDao;
+
+    @Mock
+    private HttpSession session;
+
+    private MockHttpServletRequest request;
+    private MockHttpServletResponse response;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        request = new MockHttpServletRequest();
+        response = new MockHttpServletResponse();
+    }
+
+    @Test
+    void testHandleRequestWithValidInput() throws Exception {
+        // Arrange
+        request.setParameter("strAccessGroupLobSelected", "LOB123");
+        request.setParameter("selectedBqrList", "BQR1,BQR2");
+        UserDto mockUserDto = new UserDto("testUser");
+        when(request.getSession()).thenReturn(session);
+        when(session.getAttribute("UserDto")).thenReturn(mockUserDto);
+
+        when(customerCalcDao.updateBqrAu(anyString(), anyString(), anyString()))
+            .thenReturn("Updated");
+
+        // Act
+        String result = controller.handleRequest(request);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("BQR Access Group Update"));
+        verify(customerCalcDao, times(2)).updateBqrAu(anyString(), eq("LOB123"), eq("testUser"));
+    }
+
+    @Test
+    void testHandleRequestWithNullSelectedBqrList() throws Exception {
+        // Arrange
+        request.setParameter("strAccessGroupLobSelected", "LOB123");
+        request.setParameter("selectedBqrList", null);
+        UserDto mockUserDto = new UserDto("testUser");
+        when(request.getSession()).thenReturn(session);
+        when(session.getAttribute("UserDto")).thenReturn(mockUserDto);
+
+        // Act
+        String result = controller.handleRequest(request);
+
+        // Assert
+        assertNotNull(result);
+        assertFalse(result.contains("Updated"));
+        verify(customerCalcDao, never()).updateBqrAu(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testHandleRequestWithNullUserDto() throws Exception {
+        // Arrange
+        request.setParameter("strAccessGroupLobSelected", "LOB123");
+        request.setParameter("selectedBqrList", "BQR1,BQR2");
+        when(request.getSession()).thenReturn(session);
+        when(session.getAttribute("UserDto")).thenReturn(null);
+
+        // Act
+        String result = controller.handleRequest(request);
+
+        // Assert
+        assertNotNull(result);
+        assertFalse(result.contains("Updated"));
+        verify(customerCalcDao, never()).updateBqrAu(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testHandleRequestWithInvalidTargetAu() throws Exception {
+        // Arrange
+        request.setParameter("strAccessGroupLobSelected", "");
+        request.setParameter("selectedBqrList", "BQR1,BQR2");
+        UserDto mockUserDto = new UserDto("testUser");
+        when(request.getSession()).thenReturn(session);
+        when(session.getAttribute("UserDto")).thenReturn(mockUserDto);
+
+        // Act
+        String result = controller.handleRequest(request);
+
+        // Assert
+        assertNotNull(result);
+        assertFalse(result.contains("Updated"));
+        verify(customerCalcDao, never()).updateBqrAu(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testHandleRequestWithEmptySelectedBqrList() throws Exception {
+        // Arrange
+        request.setParameter("strAccessGroupLobSelected", "LOB123");
+        request.setParameter("selectedBqrList", "");
+        UserDto mockUserDto = new UserDto("testUser");
+        when(request.getSession()).thenReturn(session);
+        when(session.getAttribute("UserDto")).thenReturn(mockUserDto);
+
+        // Act
+        String result = controller.handleRequest(request);
+
+        // Assert
+        assertNotNull(result);
+        assertFalse(result.contains("Updated"));
+        verify(customerCalcDao, never()).updateBqrAu(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testHandleRequestWithSqlInjectionFilter() throws Exception {
+        // Arrange
+        request.setParameter("strAccessGroupLobSelected", "LOB123");
+        request.setParameter("selectedBqrList", "BQR1,BQR2");
+        UserDto mockUserDto = new UserDto("testUser");
+        when(request.getSession()).thenReturn(session);
+        when(session.getAttribute("UserDto")).thenReturn(mockUserDto);
+
+        // Mock SQL injection filter behavior
+        when(BarUtil.sqlInjectionFilter(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(EncoderUtil.forJava(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(customerCalcDao.updateBqrAu(anyString(), anyString(), anyString())).thenReturn("Updated");
+
+        // Act
+        String result = controller.handleRequest(request);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.contains("BQR Access Group Update"));
+        verify(customerCalcDao, times(2)).updateBqrAu(anyString(), eq("LOB123"), eq("testUser"));
+    }
+}
+
+
+
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
