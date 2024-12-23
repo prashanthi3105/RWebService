@@ -1,119 +1,98 @@
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.InjectMocks;
-import org.mockito.MockitoAnnotations;
-
-import javax.servlet.http.HttpSession;
-
+import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
-
-class YourControllerTest {
-
-    @InjectMocks
-    private YourController controller; // Replace with the actual controller class name
-
-    @Mock
-    private HttpSession session;
-
-    @Mock
-    private BQRRecordSearchForm bqrRecordSearchForm; // Mock form object
-
-    private UserDto userDto;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        userDto = new UserDto(); // Initialize a UserDto object
-    }
+public class MyControllerTest {
 
     @Test
-    void testAdminUserWithSigFlag() {
+    void testHandleRequestForAdminUserWithSigFlagTrue() {
         // Arrange
+        List<ADGroupDtls> adLOBIdList = new ArrayList<>();
+        adLOBIdList.add(new ADGroupDtls("AD17", "DICA WBT_BRT_DISTRIBUTION_FINANCE", "Distribution Finance"));
+        adLOBIdList.add(new ADGroupDtls("AD01", "DICA_WBT_BRT_ASSET_BASED_LENDING", "Asset Based Lending"));
+
+        UserDto userDto = new UserDto();
         userDto.setRole("Admin");
         userDto.setSigFlag(true);
+        userDto.setUserADGroups(adLOBIdList);
 
-        Map<String, ADGroupDtls> adGrpMap = new HashMap<>();
-        adGrpMap.put("group1", new ADGroupDtls("Group1", "Description1"));
-        adGrpMap.put("group2", new ADGroupDtls("Group2", "Description2"));
+        ApplicationConstants.setAdGrpMap(new HashMap<>() {{
+            put("AD17", new ADGroupDtls("AD17", "DICA WBT_BRT_DISTRIBUTION_FINANCE", "Distribution Finance"));
+            put("AD01", new ADGroupDtls("AD01", "DICA_WBT_BRT_ASSET_BASED_LENDING", "Asset Based Lending"));
+        }});
 
-        ApplicationConstants.setAdGrpMap(adGrpMap); // Assume setter exists for ApplicationConstants.getAdGrpMap()
-
-        when(session.getAttribute("UserDto")).thenReturn(userDto);
+        BqrCalculatorWizardForm objwizForm = new BqrCalculatorWizardForm();
+        BqrRecordSearchForm bqrRecordSearchForm = new BqrRecordSearchForm();
 
         // Act
-        controller.handleSessionAttributes(session, bqrRecordSearchForm);
+        MyController controller = new MyController();
+        controller.handleRequest(userDto, bqrRecordSearchForm, objwizForm);
 
         // Assert
-        verify(bqrRecordSearchForm).setAccessGrouplobs(anyList());
-        List<ADGroupDtls> adGroups = new ArrayList<>(adGrpMap.values());
-        assertEquals(adGroups.size(), 2);
+        List<ADGroupDtls> resultGroups = bqrRecordSearchForm.getAccessGrouplobs();
+        assertNotNull(resultGroups);
+        assertEquals(2, resultGroups.size());
+        assertEquals("Distribution Finance", resultGroups.get(0).getAdGrpArtLobName());
+        assertEquals("Asset Based Lending", resultGroups.get(1).getAdGrpArtLobName());
     }
 
     @Test
-    void testNonAdminUserWithADGroups() {
+    void testHandleRequestForNonAdminUser() {
         // Arrange
+        List<ADGroupDtls> adLOBIdList = new ArrayList<>();
+        adLOBIdList.add(new ADGroupDtls("AD17", "DICA WBT_BRT_DISTRIBUTION_FINANCE", "Distribution Finance"));
+
+        UserDto userDto = new UserDto();
         userDto.setRole("User");
         userDto.setSigFlag(false);
+        userDto.setUserADGroups(adLOBIdList);
 
-        List<ADGroupDtls> userAdGroups = Arrays.asList(
-                new ADGroupDtls("GroupA", "DescriptionA"),
-                new ADGroupDtls("GroupB", "DescriptionB")
-        );
-        userDto.setUserADGroups(userAdGroups);
-
-        when(session.getAttribute("UserDto")).thenReturn(userDto);
+        BqrCalculatorWizardForm objwizForm = new BqrCalculatorWizardForm();
+        BqrRecordSearchForm bqrRecordSearchForm = new BqrRecordSearchForm();
 
         // Act
-        controller.handleSessionAttributes(session, bqrRecordSearchForm);
+        MyController controller = new MyController();
+        controller.handleRequest(userDto, bqrRecordSearchForm, objwizForm);
 
         // Assert
-        verify(bqrRecordSearchForm).setAccessGrouplobs(userAdGroups);
+        List<ADGroupDtls> resultGroups = bqrRecordSearchForm.getAccessGrouplobs();
+        assertNotNull(resultGroups);
+        assertEquals(1, resultGroups.size());
+        assertEquals("Distribution Finance", resultGroups.get(0).getAdGrpArtLobName());
     }
 
     @Test
-    void testUserDtoNull() {
+    void testHandleRequestForNullUserDto() {
         // Arrange
-        when(session.getAttribute("UserDto")).thenReturn(null);
+        BqrCalculatorWizardForm objwizForm = new BqrCalculatorWizardForm();
+        BqrRecordSearchForm bqrRecordSearchForm = new BqrRecordSearchForm();
 
         // Act
-        controller.handleSessionAttributes(session, bqrRecordSearchForm);
+        MyController controller = new MyController();
+        controller.handleRequest(null, bqrRecordSearchForm, objwizForm);
 
         // Assert
-        verify(bqrRecordSearchForm, never()).setAccessGrouplobs(anyList());
+        assertNull(bqrRecordSearchForm.getAccessGrouplobs());
     }
 
     @Test
-    void testUserDtoWithNullAdGroups() {
+    void testHandleRequestForEmptyUserADGroups() {
         // Arrange
-        userDto.setRole("User");
-        userDto.setSigFlag(false);
-        userDto.setUserADGroups(null);
-
-        when(session.getAttribute("UserDto")).thenReturn(userDto);
-
-        // Act
-        controller.handleSessionAttributes(session, bqrRecordSearchForm);
-
-        // Assert
-        verify(bqrRecordSearchForm, never()).setAccessGrouplobs(anyList());
-    }
-
-    @Test
-    void testAdminUserWithoutSigFlag() {
-        // Arrange
+        UserDto userDto = new UserDto();
         userDto.setRole("Admin");
-        userDto.setSigFlag(false);
+        userDto.setSigFlag(true);
+        userDto.setUserADGroups(Collections.emptyList());
 
-        when(session.getAttribute("UserDto")).thenReturn(userDto);
+        BqrCalculatorWizardForm objwizForm = new BqrCalculatorWizardForm();
+        BqrRecordSearchForm bqrRecordSearchForm = new BqrRecordSearchForm();
 
         // Act
-        controller.handleSessionAttributes(session, bqrRecordSearchForm);
+        MyController controller = new MyController();
+        controller.handleRequest(userDto, bqrRecordSearchForm, objwizForm);
 
         // Assert
-        verify(bqrRecordSearchForm, never()).setAccessGrouplobs(anyList());
+        List<ADGroupDtls> resultGroups = bqrRecordSearchForm.getAccessGrouplobs();
+        assertNotNull(resultGroups);
+        assertTrue(resultGroups.isEmpty());
     }
 }
