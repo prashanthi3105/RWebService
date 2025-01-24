@@ -1,22 +1,20 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>New AD Group</title>
+    <title>Single Screen</title>
 </head>
 <body>
-    <h2>Select New AD Group</h2>
-    <form action="processADGroup.jsp" method="post">
-        <label for="adGroup">New AD Group:</label>
-        <select id="adGroup" name="newADGroup">
-            <option value="">-- Select an AD Group --</option>
-            <option value="group1">Group 1</option>
-            <option value="group2">Group 2</option>
-            <option value="group3">Group 3</option>
-            <option value="group4">Group 4</option>
+    <h1>Dropdown Example</h1>
+
+    <!-- Dropdown -->
+    <form action="/submitAction" method="post">
+        <label for="adGroups">AIMS AD Groups:</label>
+        <select id="adGroups" name="adGroups">
+            <c:forEach items="${requestScope.adGroups}" var="group">
+                <option value="${group}">${group}</option>
+            </c:forEach>
         </select>
-        <br><br>
-        <input type="submit" value="Submit">
+        <button type="submit">Submit</button>
     </form>
 </body>
 </html>
