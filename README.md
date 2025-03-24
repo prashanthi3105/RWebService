@@ -25,7 +25,7 @@ After getting Tomcat up and running, the application was still not accessible du
 	•	Adjusting values.yaml and deployment YAML files accordingly.
 After several iterations, we were finally able to access the application’s secure login page, and authentication was successful.
 We also submitted a request to whitelist the ART URL:
-https://art-dev2.apps.lew08.ocp.nonprod.wellsfargo.net/art/login/oauth2/code/pingin.
+.
 	6.	Namespace Requests:
 We have already raised requests for namespace creation for SIT, UAT, and PFIX environments. Once DEV is fully validated, we will proceed with deployments to these additional environments.
 	7.	Docker Image Upgrade:
